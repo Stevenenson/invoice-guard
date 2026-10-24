@@ -204,7 +204,10 @@
   function anafSection(a) {
     if (!a) return '';
     if (a.status === 'unavailable') return '<h3>Date ANAF</h3><p class="ig-meta">ANAF nu a răspuns. Reîncercați.</p>';
-    const head = `<h3>Date ANAF <span class="ig-live">● LIVE</span></h3>
+    const head = a.status === 'simulat'
+      ? `<h3>Date ANAF <span class="ig-sim">● SIMULAT</span></h3>
+      <p class="ig-meta">Firmă fictivă din scenariul de demo. Răspunsul ANAF e simulat, ca să nu folosim o firmă reală drept escroc.</p>`
+      : `<h3>Date ANAF <span class="ig-live">● LIVE</span></h3>
       <p class="ig-meta">Interogat la ANAF (webservicesp.anaf.ro) pe ${dataOra(a.interogat_la)}</p>`;
     if (a.status === 'not_found') return head + '<p class="ig-anaf-nf">✕ CUI-ul nu există în registrul ANAF.</p>';
     const d = a.date;

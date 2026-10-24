@@ -103,3 +103,4 @@
 .ig-guard h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #7b8898; margin: 18px 0 6px; }
 .ig-guard { max-height: calc(100vh - 32px); overflow-y: auto; }
 .ig-toolbar .ig-stats { margin-left: auto; }
+.ig-sim { font-size: 11px; color: #9a6400; background: #fff3d6; padding: 2px 7px; border-radius: 8px; letter-spacing: 0; text-transform: none; margin-left: 6px; }

@@ -26,6 +26,25 @@ Apoi deschide:
 
 Comutatorul **Add-on activ** din stânga-jos arată pagina fără/cu add-on (înainte/după).
 
+### Aplicația desktop (lângă SAGA)
+Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, InvoiceGuard rulează ca o fereastră mică, mereu deasupra.
+
+```bash
+./run-desktop.sh            # macOS / Linux
+```
+```bat
+.venv\Scripts\pip install -r desktop\requirements.txt
+.venv\Scripts\python -m desktop
+```
+
+- Urmărește folderul `~/InvoiceGuard/Facturi`: contabilul salvează acolo facturile descărcate din SPV (XML sau arhiva ZIP), iar fiecare factură nouă e verificată în ~2 secunde.
+- Facturile roșii declanșează o notificare de sistem (macOS: Centrul de notificări, Windows: balon în bara de sistem).
+- O factură primită pe e-mail se trage în fereastră.
+- „Exportă plăți aprobate” salvează CSV-ul în `~/InvoiceGuard/Plati`.
+- Folderul se poate schimba cu variabila `INVOICEGUARD_INBOX`; serverul aplicației folosește portul 8765.
+
+Limita: fereastra nu vede ce e selectat în SAGA. Lucrează pe facturile din folder, adică exact cele care urmează să intre în SAGA.
+
 ### Ca extensie Chrome
 1. `chrome://extensions` → **Developer mode** → **Load unpacked** → folderul `extension/`.
 2. Serverul trebuie să ruleze (`./run.sh`): extensia cheamă `http://127.0.0.1:8000`.
@@ -38,6 +57,9 @@ Comutatorul **Add-on activ** din stânga-jos arată pagina fără/cu add-on (în
 | `POST /api/verify-batch` | La fel, pentru mai multe facturi, cu o singură interogare ANAF |
 | `POST /api/upload-efactura` | Primește un XML e-Factura (UBL/CIUS-RO), îl citește și îl verifică |
 | `GET /api/anaf/{cui}` | Datele live de la ANAF pentru un CUI |
+| `GET /api/inbox` | Facturile din folderul urmărit, verificate (doar în aplicația desktop) |
+| `POST /api/inbox/upload` | Adaugă o factură în folderul urmărit (trage-și-lasă) |
+| `POST /api/inbox/export` | Salvează fișierul de plăți pentru facturile aprobate |
 
 ## Ce verifică
 | # | Verificare | Sursă | Dacă pică |
@@ -51,7 +73,7 @@ Comutatorul **Add-on activ** din stânga-jos arată pagina fără/cu add-on (în
 | 7 | Nu e dublură (număr deja plătit / aceeași sumă recent) | istoric plăți | 🔴 / 🟡 |
 | 8 | Sumă obișnuită față de media ultimelor 6 facturi | istoric plăți | 🟡 |
 | 9 | Dovadă de livrare (aviz, PV, CMR) | documente | 🟡 |
-| 10 | Numele nu imită un furnizor cunoscut cu alt CUI | contracte | 🔴 |
+| 10 | Numele nu imită un furnizor cunoscut cu alt CUI (aproape identic sau îl conține: „Dedeman Distributie”) | contracte | 🔴 |
 
 Orice 🔴 înseamnă **Blochează**, orice 🟡 înseamnă **Verifică**, altfel **Plătește**.
 
@@ -61,10 +83,12 @@ Acțiuni declanșate:
 
 ## Scenariul de demo
 Furnizorii au **CUI-uri reale**, verificate live la ANAF. Contractele, IBAN-urile și istoricul plăților sunt date de test.
+Excepție: firmele escrocilor sunt fictive, ca să nu prezentăm o firmă reală drept fraudă. Pentru „DEDEMAN DISTRIBUTIE SRL” răspunsul ANAF e simulat (`ANAF_SIMULAT` în `seed.py`) și apare marcat „SIMULAT” în panou.
 
 | Factură | Ce arată |
 |---|---|
 | DI-2026-0412 „DANTE INTERNATIONAL S.R.L.” | Frauda Facebook/Google: imită furnizorul real (eMAG), CUI inexistent la ANAF, nu e în SPV, IBAN din Letonia |
+| DD-2026-0107 „DEDEMAN DISTRIBUTIE SRL” | Frauda C: firmă (fictivă) care există la ANAF și trimite **corect prin SPV**, dar imită furnizorul Dedeman. Arată de ce SPV nu e suficient. |
 | PTR-5521 OMV Petrom | IBAN schimbat față de contract („ne-am schimbat contul”) |
 | DED-1187 Dedeman | Dublură, deja plătită pe 28.09 |
 | ORN-7781203 Orange | +151,25 lei peste prețul din contract |
@@ -74,7 +98,7 @@ Furnizorii au **CUI-uri reale**, verificate live la ANAF. Contractele, IBAN-uril
 
 Live, în fața juriului:
 - **Verifică CUI la ANAF**: introduceți orice CUI real (ex. al firmei unui juriu);
-- **Verifică XML e-Factura**: încărcați `samples/factura-frauda-dante.xml` sau `samples/factura-ok-digi.xml`.
+- **Verifică XML e-Factura**: încărcați `samples/factura-frauda-dante.xml`, `samples/factura-frauda-c-dedeman-distributie.xml` sau `samples/factura-ok-digi.xml`.
 
 ## Structură
 - `index.html`, `app/`: soft-ul de facturare simulat (nu știe nimic de add-on)
@@ -83,6 +107,8 @@ Live, în fața juriului:
 - `backend/rules.py`: regulile de verificare
 - `backend/anaf.py`: clientul ANAF (cache pe disc 6 ore, max. 1 cerere/secundă)
 - `backend/efactura.py`: citirea XML-ului e-Factura
+- `backend/inbox.py`, `backend/notify.py`: urmărirea folderului și notificările (aplicația desktop)
+- `desktop/`: aplicația desktop (fereastra pywebview + pagina ei)
 - `backend/seed.py`: date de test (contracte, plăți, SPV, documente, facturi)
 - `samples/`: facturi XML de test (`python -m backend.make_samples` le regenerează)
 
