@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facturi primite · Facturare Demo</title>
+  <link rel="stylesheet" href="app/app.css">
+</head>
+<body>
+  <div class="demo-banner">Demo: simulare a interfeței unui soft de facturare online. Coloana „Verificare” este adăugată de add-on.</div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">F</span> Facturare<b>Demo</b></div>
+      <nav>
+        <a href="#"><span>▦</span> Panou de control</a>
+        <a href="#"><span>↗</span> Facturi emise</a>
+        <a href="#" class="active"><span>↙</span> Facturi primite</a>
+        <a href="#"><span>₪</span> Cheltuieli</a>
+        <a href="#"><span>⇄</span> Încasări și plăți</a>
+        <a href="#"><span>☰</span> Clienți și furnizori</a>
+        <a href="#"><span>▤</span> Gestiune</a>
+        <a href="#"><span>◔</span> Rapoarte</a>
+        <a href="#"><span>☁</span> e-Factura (SPV)</a>
+      </nav>
+      <div class="sidebar-foot"><a href="#"><span>⚙</span> Setări</a></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <input class="search" id="search" type="search" placeholder="Caută după furnizor, număr, CIF…">
+        <div class="topbar-right">
+          <span class="company" id="company"></span>
+          <span class="avatar">CN</span>
+        </div>
+      </header>
+
+      <section class="page">
+        <div class="page-head">
+          <div>
+            <div class="crumbs">Documente / Facturi primite</div>
+            <h1>Facturi primite</h1>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" id="btn-spv">☁ Preia din SPV</button>
+            <button class="btn btn-primary">+ Adaugă factură primită</button>
+          </div>
+        </div>
+
+        <div class="tabs" id="tabs">
+          <button data-tab="neplatite" class="active">Neplătite</button>
+          <button data-tab="platite">Plătite</button>
+          <button data-tab="toate">Toate</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap" id="table-wrap">
+            <table class="inv-table" id="inv-table"></table>
+          </div>
+          <div class="table-foot" id="table-foot"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-back" id="pay-modal" hidden>
+    <div class="modal">
+      <h3>Ordin de plată generat</h3>
+      <p id="pay-text"></p>
+      <div class="modal-actions"><button class="btn btn-primary" id="pay-ok">OK</button></div>
+    </div>
+  </div>
+
+  <label class="demo-toggle" title="Pornește/oprește add-on-ul ca să arăți diferența">
+    <input type="checkbox" id="addon-toggle"> Add-on activ
+  </label>
+
+  <script src="app/app-data.js"></script>
+  <script src="app/app.js"></script>
+</body>
+</html>

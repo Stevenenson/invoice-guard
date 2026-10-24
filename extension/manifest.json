@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "InvoiceGuard – verificare facturi înainte de plată",
+  "version": "0.1.0",
+  "description": "Adaugă coloana „Verificare” în lista de facturi primite: SPV, IBAN, ANAF, contract, dubluri.",
+  "content_scripts": [
+    {
+      "matches": ["file:///*", "http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["data.js", "verify.js", "addon.js"],
+      "css": ["addon.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
