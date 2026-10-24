@@ -92,11 +92,8 @@
     css.rel = 'stylesheet';
     css.href = 'extension/addon.css';
     document.head.appendChild(css);
-    for (const src of ['extension/data.js', 'extension/verify.js', 'extension/addon.js']) {
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = false;
-      document.body.appendChild(s);
-    }
+    const s = document.createElement('script');
+    s.src = 'extension/addon.js';
+    document.body.appendChild(s);
   }
 })();
