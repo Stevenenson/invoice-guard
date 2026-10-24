@@ -1,17 +1,27 @@
-// Add-on „InvoiceGuard”: citește tabelul de facturi din pagină (ca o extensie Chrome),
+// Add-on „InvoiceGuard”: citește tabelul de facturi primite din pagină (ca o extensie Chrome),
 // cere verificarea facturilor la API și adaugă coloana „Verificare”.
-// Nu depinde de codul paginii: doar de DOM, prin selectorii din CFG.
+// Nu depinde de codul paginii: recunoaște tabelul după titlurile coloanelor (HEADERS).
+// Rulează pe demo-ul nostru și pe SAGA WEB; alt soft = alți sinonimi sau o intrare nouă în SITES.
 (function () {
   if (document.documentElement.dataset.igLoaded) return;
   document.documentElement.dataset.igLoaded = '1';
 
   const API = 'http://127.0.0.1:8000';
-  const CFG = {
-    table: 'table.inv-table',
-    headers: { nr: 'Nr. factură', furnizor: 'Furnizor', cui: 'CIF', total: 'Total', stare: 'Stare' },
-    insertBefore: 'Acțiuni',
-    payButton: '[data-action="pay"]',
+  // Titluri de coloană acceptate (comparate fără diacritice, majuscule sau punctuație).
+  const HEADERS = {
+    nr: ['nr. factura', 'nr factura', 'numar factura', 'numar', 'nr.', 'nr', 'nr. document', 'nr document', 'numar document', 'document', 'serie si numar', 'serie/numar'],
+    furnizor: ['furnizor', 'denumire furnizor', 'nume furnizor', 'emitent', 'furnizor/emitent'],
+    cui: ['cif', 'cui', 'cod fiscal', 'cif furnizor', 'cui furnizor', 'cod fiscal furnizor', 'cif/cui'],
+    total: ['total', 'total factura', 'valoare', 'valoare totala', 'total de plata', 'suma', 'total cu tva'],
+    stare: ['stare', 'status', 'achitat', 'stare plata', 'situatie plata', 'platit'],
   };
+  const INSERT_BEFORE = ['actiuni', 'operatii', 'optiuni'];
+  // Particularitățile fiecărui site. payButton = butonul de plată pe care îl interceptăm (null = nu are).
+  const SITES = [
+    { name: 'SAGA WEB', test: () => /(^|\.)sagasoft\.ro$/.test(location.hostname), table: 'table', payButton: null },
+    { name: 'Generic (demo)', test: () => true, table: 'table', payButton: '[data-action="pay"]' },
+  ];
+  const SITE = SITES.find(s => s.test());
   const LABEL = { PLATESTE: 'Plătește', VERIFICA: 'Verifică', BLOCHEAZA: 'Blochează' };
   const CLS = { PLATESTE: 'ok', VERIFICA: 'warn', BLOCHEAZA: 'bad' };
   const ICON = { ok: '✓', galben: '!', rosu: '✕', na: '–' };
@@ -28,24 +38,53 @@
   const dataRo = s => (s ? s.slice(0, 10).split('-').reverse().join('.') : '');
   const dataOra = s => (s ? dataRo(s) + ', ' + s.slice(11, 16) : '');
 
-  async function api(path, opts) {
-    const r = await fetch(API + path, opts);
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(body.detail || `Eroare ${r.status}`);
-    return body;
+  // Ca extensie, cererile trec prin background.js: o pagină https (SAGA WEB) nu are voie să
+  // apeleze direct 127.0.0.1. Încărcat direct în demo (fără extensie), folosește fetch.
+  const viaExtension = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id;
+  async function api(path, { method = 'GET', json, file } = {}) {
+    let res;
+    if (viaExtension) {
+      res = await chrome.runtime.sendMessage({ type: 'ig-api', path, method, json, file });
+      if (!res || res.error) throw new Error('Failed to fetch');
+    } else {
+      const init = { method };
+      if (json) { init.headers = { 'Content-Type': 'application/json' }; init.body = JSON.stringify(json); }
+      if (file) { init.body = new FormData(); init.body.append('file', new Blob([file.text], { type: 'text/xml' }), file.name); }
+      const r = await fetch(API + path, init);
+      res = { ok: r.ok, status: r.status, body: await r.json().catch(() => ({})) };
+    }
+    if (!res.ok) throw new Error(res.body.detail || `Eroare ${res.status}`);
+    return res.body;
   }
 
   const own = el => el.classList.contains('ig-cell');
   const pageCells = row => [...row.cells].filter(c => !own(c));
   const text = el => (el ? el.textContent.trim() : '');
+  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const normHeader = s => norm(s).replace(/[:*▲▼↑↓]/g, '').trim();
+
+  // Rândul de titluri: <thead> sau, la tabelele fără thead, primul rând cu <th>.
+  function headRowOf(table) {
+    if (table.tHead && table.tHead.rows.length) return table.tHead.rows[table.tHead.rows.length - 1];
+    const first = table.rows[0];
+    return first && first.querySelector('th') ? first : null;
+  }
+
+  function bodyRows(table, headRow) {
+    return [...table.rows].filter(r => r !== headRow && r.parentElement.tagName !== 'THEAD' && r.parentElement.tagName !== 'TFOOT' && r.cells.length > 1);
+  }
 
   function columns(table) {
-    const ths = pageCells(table.tHead.rows[0]).map(text);
-    const idx = {};
-    for (const [k, label] of Object.entries(CFG.headers)) idx[k] = ths.indexOf(label);
-    idx.insert = ths.indexOf(CFG.insertBefore);
+    const headRow = headRowOf(table);
+    const ths = headRow ? pageCells(headRow).map(c => normHeader(text(c))) : [];
+    const idx = { headers: ths };
+    for (const [k, names] of Object.entries(HEADERS)) idx[k] = ths.findIndex(h => names.includes(h));
+    idx.insert = ths.findIndex(h => INSERT_BEFORE.includes(h));
     return idx;
   }
+
+  // Un tabel e de facturi primite doar dacă are număr, furnizor și CUI (așa nu atingem facturile emise).
+  const isInvoiceTable = idx => idx.nr >= 0 && idx.cui >= 0 && idx.furnizor >= 0;
 
   function readRow(row, idx) {
     const c = pageCells(row);
@@ -55,7 +94,7 @@
       furnizor: text(c[idx.furnizor]),
       cui: text(c[idx.cui]).replace(/^RO/i, ''),
       total: parseFloat(text(c[idx.total]).replace(/[^\d,]/g, '').replace(',', '.')),
-      platita: /plătit/i.test(stare) && !/neplătit/i.test(stare),
+      platita: /(platit|achitat|incasat)/.test(norm(stare)) && !/(neplatit|neachitat|partial)/.test(norm(stare)),
     };
   }
 
@@ -82,13 +121,20 @@
   }
 
   function enhance() {
-    const table = document.querySelector(CFG.table);
-    if (!table || !table.tHead) return;
-    const idx = columns(table);
-    if (idx.nr < 0 || idx.cui < 0) return;
-    ensureToolbar(table);
+    let changed = false;
+    for (const table of document.querySelectorAll(SITE.table)) {
+      if (table.closest('.ig-backdrop, .ig-toolbar')) continue;
+      const idx = columns(table);
+      if (!isInvoiceTable(idx)) continue;
+      if (enhanceTable(table, idx)) changed = true;
+    }
+    // Doar când am adăugat ceva, altfel propriile modificări ar re-declanșa observer-ul la nesfârșit.
+    if (changed) { updateToolbar(); scheduleFlush(); }
+  }
 
-    const headRow = table.tHead.rows[0];
+  function enhanceTable(table, idx) {
+    ensureToolbar(table);
+    const headRow = headRowOf(table);
     if (!headRow.querySelector('.ig-cell')) {
       const th = document.createElement('th');
       th.className = 'ig-cell ig-th';
@@ -97,7 +143,7 @@
     }
 
     let changed = false;
-    for (const row of table.tBodies[0].rows) {
+    for (const row of bodyRows(table, headRow)) {
       if (row.querySelector('.ig-cell')) continue;
       changed = true;
       const inv = readRow(row, idx);
@@ -111,8 +157,7 @@
       paintCell(td, key);
       if (!inv.platita && !results.has(key) && !pending.has(key)) pending.set(key, inv);
     }
-    // Doar când am adăugat ceva, altfel propriile modificări ar re-declanșa observer-ul la nesfârșit.
-    if (changed) { updateToolbar(); scheduleFlush(); }
+    return changed;
   }
 
   // Facturile noi se trimit grupat: o singură cerere API, o singură interogare ANAF.
@@ -127,8 +172,8 @@
     batch.forEach(([, inv]) => { inv.sent = true; });
     try {
       const { rezultate } = await api('/api/verify-batch', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ facturi: batch.map(([, i]) => ({ cui: i.cui, nr: i.nr, furnizor: i.furnizor, total: i.total })) }),
+        method: 'POST',
+        json: { facturi: batch.map(([, i]) => ({ cui: i.cui, nr: i.nr, furnizor: i.furnizor, total: isNaN(i.total) ? null : i.total })) },
       });
       for (const r of rezultate) { results.set(r.key, r); errors.delete(r.key); }
     } catch (e) {
@@ -320,10 +365,8 @@
   // ---------- Încărcare XML e-Factura ----------
   async function uploadXml(file) {
     toast(`Se verifică ${file.name}…`);
-    const fd = new FormData();
-    fd.append('file', file);
     try {
-      const r = await api('/api/upload-efactura', { method: 'POST', body: fd });
+      const r = await api('/api/upload-efactura', { method: 'POST', file: { name: file.name, text: await file.text() } });
       results.set(r.key, r);
       openPanel(r.key);
     } catch (err) {
@@ -334,7 +377,7 @@
   // ---------- Blocarea plății în pagina gazdă ----------
   let allowOnce = null;
   document.addEventListener('click', e => {
-    const pay = e.target.closest(CFG.payButton);
+    const pay = SITE.payButton && e.target.closest(SITE.payButton);
     if (pay) {
       const row = pay.closest('tr');
       const key = row && row.dataset.igKey;
@@ -400,6 +443,30 @@
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 4200);
+  }
+
+  // ---------- Diagnostic: ce tabele vede add-on-ul (cerut din iconița extensiei) ----------
+  function diagnostic() {
+    const tables = [...document.querySelectorAll('table')].filter(t => !t.closest('.ig-backdrop')).map((t, i) => {
+      const idx = columns(t);
+      const headRow = headRowOf(t);
+      const first = headRow && bodyRows(t, headRow)[0];
+      return {
+        tabel: i + 1,
+        clase: t.className || '(fără)',
+        coloane: idx.headers,
+        recunoscute: Object.fromEntries(Object.keys(HEADERS).map(k => [k, idx[k] >= 0 ? idx.headers[idx[k]] : null])),
+        facturi_primite: isInvoiceTable(idx),
+        randuri: headRow ? bodyRows(t, headRow).length : t.rows.length,
+        exemplu_rand: first ? pageCells(first).map(text).map(v => v.slice(0, 40)) : [],
+      };
+    });
+    return { site: SITE.name, url: location.origin + location.pathname, titlu: document.title, tabele: tables };
+  }
+  if (viaExtension) {
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      if (msg && msg.type === 'ig-diagnostic') sendResponse(diagnostic());
+    });
   }
 
   new MutationObserver(enhance).observe(document.body, { childList: true, subtree: true });

@@ -13,12 +13,8 @@ Ai nevoie de Python 3.9 sau mai nou (`python3 --version`).
 ./run.sh
 ```
 
-**Windows**
-```bat
-python -m venv .venv
-.venv\Scripts\pip install -r backend\requirements.txt
-.venv\Scripts\uvicorn backend.main:app --reload
-```
+**Windows**: dublu-click pe `run.bat` (prima pornire instalează pachetele, durează 1–2 minute).
+Necesită Python 3.12 sau 3.13 de pe [python.org](https://www.python.org/downloads/), cu „Add python.exe to PATH” bifat.
 
 Apoi deschide:
 - **http://127.0.0.1:8000**: demo-ul (soft-ul de facturare simulat + add-on-ul)
@@ -32,10 +28,7 @@ Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, In
 ```bash
 ./run-desktop.sh            # macOS / Linux
 ```
-```bat
-.venv\Scripts\pip install -r desktop\requirements.txt
-.venv\Scripts\python -m desktop
-```
+Pe Windows: dublu-click pe `run-desktop.bat`. Folderul urmărit e `C:\Users\<nume>\InvoiceGuard\Facturi`.
 
 - Urmărește folderul `~/InvoiceGuard/Facturi`: contabilul salvează acolo facturile descărcate din SPV (XML sau arhiva ZIP), iar fiecare factură nouă e verificată în ~2 secunde.
 - Facturile roșii declanșează o notificare de sistem (macOS: Centrul de notificări, Windows: balon în bara de sistem).
@@ -45,10 +38,21 @@ Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, In
 
 Limita: fereastra nu vede ce e selectat în SAGA. Lucrează pe facturile din folder, adică exact cele care urmează să intre în SAGA.
 
-### Ca extensie Chrome
+### Ca extensie Chrome (demo și SAGA WEB)
 1. `chrome://extensions` → **Developer mode** → **Load unpacked** → folderul `extension/`.
-2. Serverul trebuie să ruleze (`./run.sh`): extensia cheamă `http://127.0.0.1:8000`.
-3. Debifează „Add-on activ” din pagină: coloana apare oricum, injectată de extensie.
+2. Serverul trebuie să ruleze (`./run.sh`). Iconița extensiei arată dacă API-ul e pornit.
+3. Extensia rulează pe demo și pe **SAGA WEB** (`https://web.sagasoft.ro`). Pentru demo din fișier local: la extensie, **Details** → **Allow access to file URLs**.
+
+Cum găsește lista de facturi: caută tabelele după titlurile coloanelor, fără diacritice și cu sinonime (`HEADERS` în `addon.js`). Un tabel e luat în seamă doar dacă are **număr, furnizor și CUI**, ca să nu atingă facturile emise. Coloana se pune înainte de „Acțiuni”/„Operații”, iar facturile „Achitat”/„Plătită” sunt sărite.
+
+Cererile către API trec prin `background.js`: o pagină `https` ca SAGA WEB nu are voie să apeleze direct `127.0.0.1`.
+
+**SAGA WEB, neverificat încă:** n-am avut un cont SAGA WEB, deci titlurile reale ale coloanelor din lista de facturi primite nu sunt confirmate. Dacă coloana „Verificare” nu apare:
+1. intrați în SAGA WEB pe pagina cu facturile primite;
+2. iconița InvoiceGuard → **Diagnostic** → **Copiază**;
+3. trimiteți raportul: arată tabelele găsite și coloanele lor, iar sinonimele lipsă se adaugă în `HEADERS`.
+
+În SAGA WEB nu interceptăm încă butonul de plată (`payButton: null` în `SITES`); restul (coloana, panoul, ANAF, exportul) funcționează la fel ca în demo. Înainte de o lansare reală, extensia trebuie verificată cu termenii de utilizare SAGA.
 
 ## API
 | Endpoint | Ce face |
@@ -103,6 +107,7 @@ Live, în fața juriului:
 ## Structură
 - `index.html`, `app/`: soft-ul de facturare simulat (nu știe nimic de add-on)
 - `extension/addon.js`: citește tabelul din DOM, adaugă coloana, panoul de detalii, blocarea plății, exportul
+- `extension/background.js`, `popup.html`: cererile către API și fereastra extensiei (stare API, diagnostic)
 - `backend/main.py`: API-ul FastAPI
 - `backend/rules.py`: regulile de verificare
 - `backend/anaf.py`: clientul ANAF (cache pe disc 6 ore, max. 1 cerere/secundă)

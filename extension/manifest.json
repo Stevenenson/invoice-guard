@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
   "name": "InvoiceGuard – verificare facturi înainte de plată",
-  "version": "0.2.0",
-  "description": "Adaugă coloana „Verificare” în lista de facturi primite: SPV, IBAN, ANAF (live), contract, dubluri.",
+  "version": "0.3.0",
+  "description": "Adaugă coloana „Verificare” în lista de facturi primite (SAGA WEB și demo): SPV, IBAN, ANAF live, dubluri, nume clonat.",
   "host_permissions": ["http://127.0.0.1:8000/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "InvoiceGuard", "default_popup": "popup.html" },
   "content_scripts": [
     {
-      "matches": ["file:///*", "http://localhost/*", "http://127.0.0.1/*"],
+      "matches": ["https://web.sagasoft.ro/*", "http://localhost/*", "http://127.0.0.1/*", "file:///*"],
       "js": ["addon.js"],
       "css": ["addon.css"],
       "run_at": "document_idle"
