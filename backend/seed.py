@@ -64,7 +64,18 @@ SPV = {
     "1590082|PTR-5521", "2864518|ALX-2026-55871",
 }
 
+# Facturile de test din samples/teste (python -m backend.make_samples): cele care „au venit prin SPV”.
+SPV |= {
+    "5888716|DG-90101", "9010105|ORN-7790001", "28909028|EF-2026-11-801", "14399840|DI-10301", "2816464|DED-1240",
+    "9010105|ORN-7790002", "2816464|DED-1170",
+    "5888716|DG-90102", "28909028|EF-2026-11-802", "2864518|ALX-2026-60010", "14399840|DI-10302", "2816464|DED-1241",
+}
+
 DOCUMENTE = {
+    "14399840|DI-10301": [{"tip": "Aviz de însoțire", "nr": "AV-5601"}],
+    "2816464|DED-1240": [{"tip": "Aviz de însoțire", "nr": "AV-930"}],
+    "2816464|DED-1170": [{"tip": "Aviz de însoțire", "nr": "AV-850"}],
+    "2816464|DED-1241": [{"tip": "Aviz de însoțire", "nr": "AV-931"}],
     "14399840|DI-10233": [{"tip": "Aviz de însoțire", "nr": "AV-5512"}],
     "2816464|DED-1203": [{"tip": "Aviz de însoțire", "nr": "AV-901"}],
     "2816464|DED-1187": [{"tip": "Aviz de însoțire", "nr": "AV-874"}],
