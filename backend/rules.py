@@ -31,9 +31,21 @@ def days_between(a: str, b: date) -> int:
     return (b - date.fromisoformat(a)).days
 
 
-def norm_name(s: str) -> str:
+def name_tokens(s: str) -> List[str]:
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
-    return "".join(t for t in re.sub(r"[^a-z0-9 ]", " ", s).split() if t not in STOP)
+    return [t for t in re.sub(r"[^a-z0-9 ]", " ", s).split() if t not in STOP]
+
+
+def norm_name(s: str) -> str:
+    return "".join(name_tokens(s))
+
+
+def similar_names(known: str, other: str) -> bool:
+    """Aproape identice („Computer” vs „Computers”) sau numele cunoscut e cuprins în cel nou („Dedeman” în „Dedeman Distributie”)."""
+    a, b = norm_name(known), norm_name(other)
+    if levenshtein(a, b) <= 2:
+        return True
+    return set(name_tokens(known)) <= set(name_tokens(other))
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -119,7 +131,7 @@ def verify_invoice(inv: dict, anaf: Lookup, db) -> dict:
                              "cu care să-l comparăm.", "IBAN nou"))
 
     # 3. ANAF (live)
-    t, src = "Firmă activă la ANAF", "ANAF (live)"
+    t, src = "Firmă activă la ANAF", "ANAF (simulat pentru demo)" if anaf_status == "simulat" else "ANAF (live)"
     if not cui_valid(inv["cui"]):
         checks.append(_check("anaf", t, "rosu", f"CUI {inv['cui']} este invalid: cifra de control nu se potrivește.", "CUI invalid", "algoritm CUI"))
     elif anaf_status == "unavailable":
@@ -220,10 +232,9 @@ def verify_invoice(inv: dict, anaf: Lookup, db) -> dict:
                              "Fără aviz/PV", "documente"))
 
     # 9. Nume asemănător cu un furnizor cunoscut, dar alt CUI (frauda „Quanta”)
-    n = norm_name(inv["furnizor"])
     sosie = next((
         {"cui": cui, "nume": c["denumire"]} for cui, c in db.CONTRACTE.items()
-        if cui != inv["cui"] and levenshtein(norm_name(c["denumire"]), n) <= 2
+        if cui != inv["cui"] and similar_names(c["denumire"], inv["furnizor"])
     ), None)
     if sosie:
         checks.append(_check("sosie", "Nu imită un furnizor cunoscut", "rosu",

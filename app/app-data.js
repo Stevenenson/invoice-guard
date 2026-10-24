@@ -11,6 +11,7 @@ window.APP_DATA = {
     { nr: 'DED-1203',       furnizor: 'DEDEMAN SRL',                cif: '2816464',  data: '2026-10-19', scadenta: '2026-11-02', total: 3799.40,  sursa: 'SPV',    stare: 'Neplătită' },
     { nr: 'DI-2026-0412',   furnizor: 'DANTE INTERNATIONAL S.R.L.', cif: '59880002', data: '2026-10-20', scadenta: '2026-10-27', total: 47916.00, sursa: 'E-mail', stare: 'Neplătită' },
     { nr: 'PTR-5521',       furnizor: 'OMV PETROM SA',              cif: '1590082',  data: '2026-10-21', scadenta: '2026-11-05', total: 4356.00,  sursa: 'SPV',    stare: 'Neplătită' },
+    { nr: 'DD-2026-0107',   furnizor: 'DEDEMAN DISTRIBUTIE SRL',    cif: '59880010', data: '2026-10-22', scadenta: '2026-10-29', total: 3339.60,  sursa: 'SPV',    stare: 'Neplătită' },
     { nr: 'DED-1187',       furnizor: 'DEDEMAN SRL',                cif: '2816464',  data: '2026-10-23', scadenta: '2026-11-06', total: 4598.00,  sursa: 'E-mail', stare: 'Neplătită' },
     { nr: 'DED-1187',       furnizor: 'DEDEMAN SRL',                cif: '2816464',  data: '2026-09-15', scadenta: '2026-09-29', total: 4598.00,  sursa: 'SPV',    stare: 'Plătită' },
     { nr: 'DG-87102',       furnizor: 'DIGI ROMANIA S.A.',          cif: '5888716',  data: '2026-09-18', scadenta: '2026-09-30', total: 450.12,   sursa: 'SPV',    stare: 'Plătită' },

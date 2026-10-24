@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InvoiceGuard</title>
+  <link rel="stylesheet" href="/extension/addon.css">
+  <link rel="stylesheet" href="desktop.css">
+</head>
+<body>
+  <header class="igd-head">
+    <div class="igd-title"><span class="ig-logo">◆</span> InvoiceGuard</div>
+    <button class="igd-icon" id="igd-pin" title="Mereu deasupra" hidden>📌</button>
+  </header>
+
+  <div class="igd-folder">
+    <span>Folder urmărit</span>
+    <code id="igd-folder">…</code>
+    <button class="igd-link" id="igd-open-folder" hidden>Deschide</button>
+  </div>
+
+  <div class="igd-stats" id="igd-stats"></div>
+
+  <main class="igd-list" id="igd-list">
+    <p class="igd-empty">Se încarcă…</p>
+  </main>
+
+  <div class="igd-drop" id="igd-drop">
+    <b>Trage aici o factură</b>
+    <span>XML e-Factura sau arhiva ZIP din SPV</span>
+    <button class="igd-link" id="igd-pick">sau alege fișierul</button>
+    <input type="file" id="igd-file" accept=".xml,.zip" multiple hidden>
+  </div>
+
+  <footer class="igd-foot">
+    <button class="ig-btn ig-btn-primary" id="igd-export">Exportă plăți aprobate</button>
+  </footer>
+
+  <script src="desktop.js"></script>
+</body>
+</html>

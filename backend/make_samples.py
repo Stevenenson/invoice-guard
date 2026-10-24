@@ -58,6 +58,12 @@ SAMPLES = {
         "iban": seed.iban("LV", "HABA", "0551043519501"),
         "linii": [("LAP-15", 'Laptop 15" i7 / 32GB', 8, 3300), ("MON-27", 'Monitor 27"', 8, 780)],
     },
+    # Frauda C: firmă fictivă cu nume asemănător, factură trimisă corect prin SPV.
+    "factura-frauda-c-dedeman-distributie.xml": {
+        "nr": "DD-2026-0107", "data": "2026-10-22", "scadenta": "2026-10-29", "cui": "59880010", "furnizor": "DEDEMAN DISTRIBUTIE SRL",
+        "iban": seed.iban("RO", "BTRL", "RONCRT0059880010"),
+        "linii": [("VOP-15L", "Vopsea lavabilă albă 15 L", 30, 92)],
+    },
 }
 
 

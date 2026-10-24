@@ -48,8 +48,17 @@ CONTRACTE = {
                 "articole": {"MOTORINA": {"denumire": "Motorină (card flotă)", "um": "l", "pret": 6.00}}},
 }
 
+# Firme fictive pentru scenariile de fraudă care trec de ANAF. Nu folosim firme reale, ca să nu
+# prezentăm o firmă nevinovată drept escroc. Răspunsul ANAF pentru ele e simulat și marcat ca atare.
+ANAF_SIMULAT = {
+    "59880010": {"cui": "59880010", "denumire": "DEDEMAN DISTRIBUTIE SRL", "adresa": "JUD. ILFOV, OTOPENI, STR. EXEMPLU NR. 1 (fictiv)",
+                 "nr_reg_com": "J2026000000000 (fictiv)", "data_inregistrare": "2026-08-20", "cod_caen": "4673",
+                 "tva": True, "inactiv": False, "data_inactivare": "", "radiat": False, "data_radiere": "", "e_factura": True},
+}
+
 # Ce facturi există în SPV (e-Factura) pentru CUI-ul nostru. Simulat: accesul real cere certificat digital.
 SPV = {
+    "59880010|DD-2026-0107",
     "5888716|DG-88213", "5888716|DG-87102", "5888716|DG-89001", "9010105|ORN-7781203",
     "14399840|DI-10233", "2816464|DED-1203", "2816464|DED-1187", "28909028|EF-2026-10-778",
     "1590082|PTR-5521", "2864518|ALX-2026-55871",
@@ -102,6 +111,10 @@ FACTURI = [
      "linii": [_l("MOTORINA", "Motorină (card flotă) – oct. 2026", 600, 6.00)]},
     {"cui": "14399840", "nr": "DI-10233", "furnizor": "DANTE INTERNATIONAL SA", "sursa": "SPV", "iban": CONTRACTE["14399840"]["iban"],
      "linii": [_l("MON-27", 'Monitor 27"', 6, 780)]},
+    # Frauda C: firmă înființată de escroc, cu nume asemănător, factură trimisă CORECT prin SPV.
+    {"cui": "59880010", "nr": "DD-2026-0107", "furnizor": "DEDEMAN DISTRIBUTIE SRL", "sursa": "SPV",
+     "iban": iban("RO", "BTRL", "RONCRT0059880010"),
+     "linii": [_l("VOP-15L", "Vopsea lavabilă albă 15 L", 30, 92)]},
     {"cui": "2864518", "nr": "ALX-2026-55871", "furnizor": "ALTEX ROMANIA SRL", "sursa": "SPV", "iban": iban("RO", "BTRL", "RONCRT0028645180"),
      "linii": [_l("AC-12K", "Aer condiționat 12000 BTU", 1, 2450)]},
 ]
