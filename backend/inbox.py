@@ -82,6 +82,9 @@ class Inbox:
                     item["rezultat"] = self._verify(inv)
                 except (efactura.InvalidInvoice, zipfile.BadZipFile, OSError) as e:
                     item["eroare"] = str(e)
+                    # Un fișier încă în curs de copiere (sau blocat pe Windows) se citește din nou la scanarea următoare:
+                    # copierea din Explorer/Finder păstrează data fișierului, deci mtime nu s-ar schimba.
+                    del self._seen[path.name]
                 self._items[path.name] = item
                 if notify and "rezultat" in item:
                     self._on_new(item["rezultat"])

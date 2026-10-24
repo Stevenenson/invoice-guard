@@ -13,12 +13,8 @@ Ai nevoie de Python 3.9 sau mai nou (`python3 --version`).
 ./run.sh
 ```
 
-**Windows**
-```bat
-python -m venv .venv
-.venv\Scripts\pip install -r backend\requirements.txt
-.venv\Scripts\uvicorn backend.main:app --reload
-```
+**Windows**: dublu-click pe `run.bat` (prima pornire instalează pachetele, durează 1–2 minute).
+Necesită Python 3.12 sau 3.13 de pe [python.org](https://www.python.org/downloads/), cu „Add python.exe to PATH” bifat.
 
 Apoi deschide:
 - **http://127.0.0.1:8000**: demo-ul (soft-ul de facturare simulat + add-on-ul)
@@ -32,10 +28,7 @@ Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, In
 ```bash
 ./run-desktop.sh            # macOS / Linux
 ```
-```bat
-.venv\Scripts\pip install -r desktop\requirements.txt
-.venv\Scripts\python -m desktop
-```
+Pe Windows: dublu-click pe `run-desktop.bat`. Folderul urmărit e `C:\Users\<nume>\InvoiceGuard\Facturi`.
 
 - Urmărește folderul `~/InvoiceGuard/Facturi`: contabilul salvează acolo facturile descărcate din SPV (XML sau arhiva ZIP), iar fiecare factură nouă e verificată în ~2 secunde.
 - Facturile roșii declanșează o notificare de sistem (macOS: Centrul de notificări, Windows: balon în bara de sistem).
