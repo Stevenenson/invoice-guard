@@ -18,7 +18,7 @@ Numele fișierului spune rezultatul așteptat. Funcționează doar cu codul din 
 | galben-11-digi-pret-peste-contract | Verifică | 399 lei în loc de 372 (+32,67 lei cu TVA) |
 | galben-12-electrica-suma-de-3-ori-media | Verifică | 3,3× media ultimelor facturi |
 | galben-13-altex-furnizor-nou-fara-contract | Verifică | Furnizor fără contract, IBAN nou |
-| galben-14-emag-fara-aviz | Plătește | Fără aviz: dovada de livrare nu se mai verifică |
+| verde-14-emag-fara-aviz | Plătește | Fără aviz, dar dovada de livrare nu se mai verifică |
 | galben-15-dedeman-articol-care-nu-e-in-contract | Verifică | „Scară aluminiu” nu apare în contract |
 
 Se regenerează cu `python -m backend.make_samples`.

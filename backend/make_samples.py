@@ -106,7 +106,7 @@ TESTE = {
                                                       [("EN-KWH", "Energie electrică – oct. 2026", 8000, 0.92)]),
     "galben-13-altex-furnizor-nou-fara-contract.xml": _t("ALX-2026-60010", ALTEX, "ALTEX ROMANIA SRL", seed.iban("RO", "BTRL", "RONCRT0028645180"),
                                                          [("FRIG-260", "Frigider 260 L", 1, 1899)]),
-    "galben-14-emag-fara-aviz.xml": _t("DI-10302", DANTE, "DANTE INTERNATIONAL SA", C[DANTE]["iban"],
+    "verde-14-emag-fara-aviz.xml": _t("DI-10302", DANTE, "DANTE INTERNATIONAL SA", C[DANTE]["iban"],
                                        [("MON-27", 'Monitor 27"', 2, 780)]),
     "galben-15-dedeman-articol-care-nu-e-in-contract.xml": _t("DED-1241", DEDEMAN, "DEDEMAN SRL", C[DEDEMAN]["iban"],
                                                               [("SCARA-5T", "Scară aluminiu 5 trepte", 1, 250)]),
