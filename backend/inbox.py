@@ -57,10 +57,15 @@ def empty_folder(folder: Path) -> int:
     """Golește folderul de facturi (aplicația desktop pornește mereu cu lista goală)."""
     if not folder.is_dir():
         return 0
-    paths = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in (".xml", ".zip") and not p.name.startswith(".")]
-    for p in paths:
-        move_to_trash(p)
-    return len(paths)
+    moved = 0
+    for p in folder.iterdir():
+        if p.is_file() and p.suffix.lower() in (".xml", ".zip") and not p.name.startswith("."):
+            try:
+                move_to_trash(p)
+                moved += 1
+            except OSError:  # pe Windows, un fișier deschis în alt program (ex. SAGA) nu se poate muta
+                pass
+    return moved
 
 
 class Inbox:
