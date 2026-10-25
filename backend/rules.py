@@ -235,7 +235,8 @@ def verify_invoice(inv: dict, anaf: Lookup, db) -> dict:
     rosii = [c for c in checks if c["status"] == "rosu"]
     galbene = [c for c in checks if c["status"] == "galben"]
     decizie = "BLOCHEAZA" if rosii else "VERIFICA" if galbene else "PLATESTE"
-    scor = min(100, len(rosii) * 35 + len(galbene) * 12 + (3 if decizie == "PLATESTE" else 0))
+    # Scorul numără problemele găsite: o factură verde are 0. Decizia nu depinde de scor, ci de regula de mai sus.
+    scor = min(100, len(rosii) * 35 + len(galbene) * 12)
 
     return {
         "key": key, "factura": inv["nr"], "furnizor": inv["furnizor"], "cui": inv["cui"], "total": total,
