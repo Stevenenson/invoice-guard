@@ -8,7 +8,10 @@ peste soft-ul real. Verificările le face API-ul Python (`backend/`), inclusiv o
 
 Ai nevoie de Python 3.9 sau mai nou (`python3 --version`).
 
-**macOS / Linux**
+**macOS**: dublu-click pe `InvoiceGuard Web.command` în Finder (sau `./run.sh` în Terminal).
+Fișierele `.sh` nu pornesc cu dublu-click pe Mac (Finder le deschide ca text); `.command` da.
+
+**Linux**
 ```bash
 ./run.sh
 ```
@@ -25,9 +28,7 @@ Comutatorul **Add-on activ** din stânga-jos arată pagina fără/cu add-on (în
 ### Aplicația desktop (lângă SAGA)
 Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, InvoiceGuard rulează ca o fereastră mică, mereu deasupra.
 
-```bash
-./run-desktop.sh            # macOS / Linux
-```
+macOS: dublu-click pe `InvoiceGuard Desktop.command` (sau `./run-desktop.sh` în Terminal).
 Pe Windows: dublu-click pe `run-desktop.bat`. Folderul urmărit e `C:\Users\<nume>\InvoiceGuard\Facturi`.
 
 - Urmărește folderul `~/InvoiceGuard/Facturi`: contabilul salvează acolo facturile descărcate din SPV (XML sau arhiva ZIP), iar fiecare factură nouă e verificată în ~2 secunde.
