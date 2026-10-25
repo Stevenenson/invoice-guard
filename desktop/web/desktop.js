@@ -14,6 +14,7 @@
     VERIFICA: '<span class="ig-badge ig-warn"><span class="ig-dot"></span>De reverificat</span>',
     PLATESTE: '<span class="ig-badge ig-ok"><span class="ig-dot"></span>Verificată</span>',
     APROBAT: '<span class="ig-badge ig-approved">✓ Aprobată de tine</span>',
+    DEBLOCAT: '<span class="ig-badge ig-approved">✓ Deblocată de tine</span>',
     EROARE: '<span class="ig-badge ig-off">Necitită</span>',
   };
   const VERDICT = {
@@ -21,8 +22,9 @@
     VERIFICA: ['!', 'Reverifică înainte de plată', 'Ceva nu se potrivește. Lămurește problemele de mai jos, apoi aprob-o.'],
     PLATESTE: ['✓', 'Poți plăti', 'Toate verificările au trecut. Intră în exportul pentru bancă.'],
     APROBAT: ['✓', 'Aprobată de tine', 'Ai reverificat-o. Intră în exportul pentru bancă.'],
+    DEBLOCAT: ['✓', 'Deblocată de tine', 'Era blocată; ai lămurit problema și ai notat motivul. Intră în export.'],
   };
-  const SEVERITY = { BLOCHEAZA: 0, VERIFICA: 1, EROARE: 2, APROBAT: 3, PLATESTE: 4 };
+  const SEVERITY = { BLOCHEAZA: 0, VERIFICA: 1, EROARE: 2, DEBLOCAT: 3, APROBAT: 3, PLATESTE: 4 };
   const ICON = { ok: '✓', galben: '!', rosu: '✕', na: '–' };
   const POLL_MS = 2000;
 
@@ -48,7 +50,16 @@
   let sesiune = null;
   let approved = new Set();
   try { approved = new Set(JSON.parse(localStorage.getItem('igd.approved') || '[]')); } catch (_) {}
-  const saveApproved = () => { try { localStorage.setItem('igd.approved', JSON.stringify([...approved])); } catch (_) {} };
+  // Facturile blocate deblocate de contabil, cu motivul scris de el: {cheie: {motiv, la}}.
+  let deblocate = {};
+  try { deblocate = JSON.parse(localStorage.getItem('igd.deblocate') || '{}'); } catch (_) {}
+  const saveApproved = () => {
+    try {
+      localStorage.setItem('igd.approved', JSON.stringify([...approved]));
+      localStorage.setItem('igd.deblocate', JSON.stringify(deblocate));
+    } catch (_) {}
+  };
+  const forget = key => { approved.delete(key); delete deblocate[key]; };
 
   async function api(path, opts) {
     const r = await fetch(path, opts);
@@ -60,9 +71,10 @@
   const decisionOf = it => {
     if (it.eroare) return 'EROARE';
     const r = it.rezultat;
+    if (r.decizie === 'BLOCHEAZA' && deblocate[r.key]) return 'DEBLOCAT';
     return r.decizie === 'VERIFICA' && approved.has(r.key) ? 'APROBAT' : r.decizie;
   };
-  const groupOf = it => ({ PLATESTE: 'OK', APROBAT: 'OK' }[decisionOf(it)] || decisionOf(it));
+  const groupOf = it => ({ PLATESTE: 'OK', APROBAT: 'OK', DEBLOCAT: 'OK' }[decisionOf(it)] || decisionOf(it));
   const count = g => items.filter(i => groupOf(i) === g).length;
   const native = () => window.pywebview && window.pywebview.api;
 
@@ -111,7 +123,7 @@
     if (data.sesiune !== sesiune) {
       let stored = null;
       try { stored = localStorage.getItem('igd.sesiune'); localStorage.setItem('igd.sesiune', data.sesiune); } catch (_) {}
-      if (stored !== data.sesiune) { approved.clear(); saveApproved(); }
+      if (stored !== data.sesiune) { approved.clear(); deblocate = {}; saveApproved(); }
       sesiune = data.sesiune;
     }
     const json = JSON.stringify(data.facturi);
@@ -238,12 +250,21 @@
         ${fileRow(it)}`;
     }
     const r = it.rezultat;
-    const [ic, title, sub] = VERDICT[d];
+    const [ic, title] = VERDICT[d];
+    const sub = d === 'DEBLOCAT' ? `Motivul tău: „${esc(deblocate[r.key].motiv)}” (${dataOra(deblocate[r.key].la)})` : VERDICT[d][2];
     const probleme = r.verificari.filter(c => c.status === 'rosu' || c.status === 'galben');
     const actions = d === 'VERIFICA'
       ? `<button class="ig-btn ig-btn-primary" data-approve="${f}">✓ Am verificat, aprob plata</button>
          <small>După aprobare, factura trece la „Verificate” și intră în exportul pentru bancă.</small>`
-      : d === 'APROBAT' ? `<button class="ig-btn" data-unapprove="${f}">Anulează aprobarea</button>` : '';
+      : d === 'APROBAT' ? `<button class="ig-btn" data-unapprove="${f}">Anulează aprobarea</button>`
+      : d === 'DEBLOCAT' ? `<button class="ig-btn" data-unapprove="${f}">Anulează deblocarea</button>`
+      // Deblocarea e intenționat mai ascunsă și cere un motiv scris: o factură roșie nu se plătește din reflex.
+      : d === 'BLOCHEAZA' ? `<details class="igd-override">
+          <summary>Am lămurit problema: deblochez factura</summary>
+          <p>Doar dacă ai verificat în afara aplicației, de exemplu ai sunat furnizorul la numărul din contract. Scrie ce ai verificat:</p>
+          <textarea class="igd-motiv" rows="2" placeholder="Ex.: am sunat la numărul din contract, contul nou e confirmat de dl. Popescu"></textarea>
+          <button class="ig-btn igd-danger" data-unblock="${f}" disabled>Deblochează și aprobă plata</button>
+        </details>` : '';
     return `<div class="igd-d-head">
         <h2>${esc(r.furnizor)}</h2>
         <div class="ig-meta">Factura <b>${esc(r.factura)}</b> · CUI ${esc(r.cui)} · <b>${lei(r.total)}</b></div>
@@ -291,17 +312,20 @@
     if (card) { card.focus({ preventScroll: true }); card.scrollIntoView({ block: wideMq.matches ? 'nearest' : 'start' }); }
   }
 
-  function setApproval(fisier, on) {
+  function setApproval(fisier, on, motiv) {
     const r = items.find(i => i.fisier === fisier).rezultat;
-    // După aprobare trecem direct la următoarea factură de reverificat.
+    // După aprobare trecem direct la următoarea factură din același filtru.
     const before = visible();
     const next = before[before.findIndex(i => i.fisier === fisier) + 1];
-    if (on) approved.add(r.key); else approved.delete(r.key);
+    if (!on) forget(r.key);
+    // Ora locală (nu UTC), în formatul folosit peste tot în pagină.
+    else if (r.decizie === 'BLOCHEAZA') deblocate[r.key] = { motiv, la: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19) };
+    else approved.add(r.key);
     saveApproved();
     sortItems(items);
-    if (on && filter === 'VERIFICA') selected = next ? next.fisier : null;
+    if (on && (filter === 'VERIFICA' || filter === 'BLOCHEAZA')) selected = next ? next.fisier : null;
     render();
-    if (on) notice(`Ai aprobat factura ${esc(r.factura)} de la ${esc(r.furnizor)}. A trecut la „Verificate”.`, 'ok', 5000);
+    if (on) notice(`Ai ${r.decizie === 'BLOCHEAZA' ? 'deblocat' : 'aprobat'} factura ${esc(r.factura)} de la ${esc(r.furnizor)}. A trecut la „Verificate”.`, 'ok', 5000);
   }
 
   // ---------- Ștergere: fișierele se mută în folderul „Sterse”, nu se pierd ----------
@@ -314,7 +338,7 @@
     const next = before[i + 1] || before[i - 1];
     try { await api(`/api/inbox/${encodeURIComponent(fisier)}`, { method: 'DELETE' }); } catch (e) { notice(esc(e.message), 'bad'); return; }
     // Dacă aceeași factură e încărcată din nou, se verifică de la zero.
-    if (it && it.rezultat) { approved.delete(it.rezultat.key); saveApproved(); }
+    if (it && it.rezultat) { forget(it.rezultat.key); saveApproved(); }
     selected = next ? next.fisier : null;
     lastJson = '';
     await refresh();
@@ -331,6 +355,7 @@
     let r;
     try { r = await api('/api/inbox', { method: 'DELETE' }); } catch (e) { notice(esc(e.message), 'bad'); return; }
     approved.clear();
+    deblocate = {};
     saveApproved();
     filter = 'toate';
     query = '';
@@ -357,7 +382,17 @@
     if (el('[data-filter]')) { setFilter(el('[data-filter]').dataset.filter); return; }
     if (el('[data-approve]')) { setApproval(el('[data-approve]').dataset.approve, true); return; }
     if (el('[data-unapprove]')) { setApproval(el('[data-unapprove]').dataset.unapprove, false); return; }
+    if (el('[data-unblock]')) {
+      const motiv = el('.igd-override').querySelector('.igd-motiv').value.trim();
+      setApproval(el('[data-unblock]').dataset.unblock, true, motiv);
+      return;
+    }
     if (el('[data-sel]')) select(el('[data-sel]').dataset.sel);
+  });
+  // Butonul de deblocare se activează doar după un motiv de cel puțin 10 caractere.
+  document.addEventListener('input', e => {
+    if (!e.target.classList.contains('igd-motiv')) return;
+    e.target.closest('.igd-override').querySelector('[data-unblock]').disabled = e.target.value.trim().length < 10;
   });
   document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('igd-more')) showAll = e.target.open; }, true);
 
@@ -433,7 +468,8 @@
   $('igd-export').addEventListener('click', async () => {
     if (!native()) { notice('Exportul facturilor merge doar în aplicația desktop (dublu-click pe „InvoiceGuard Desktop”).', 'bad'); return; }
     let r;
-    try { r = await window.pywebview.api.export_invoices(verificate()); } catch (e) { notice(esc(e.message || e), 'bad'); return; }
+    const deblocateNume = items.filter(i => decisionOf(i) === 'DEBLOCAT').map(i => i.fisier);
+    try { r = await window.pywebview.api.export_invoices(verificate(), deblocateNume); } catch (e) { notice(esc(e.message || e), 'bad'); return; }
     if (r.anulat) return;
     notice(r.salvate
       ? `Am salvat ${cate(r.salvate, 'factură verificată', 'facturi verificate')} în <code>${esc(r.folder)}</code>, fiecare exact cum a fost importată. De acolo le imporți în SAGA.`

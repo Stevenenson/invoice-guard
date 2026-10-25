@@ -140,15 +140,20 @@ class Inbox:
             self._seen.pop(name, None)
             return found
 
-    def export(self, names: List[str], dest: Path) -> List[str]:
-        """Copiază facturile în folderul ales, exact cum au fost importate (XML-ul sau arhiva ZIP din SPV), pentru SAGA."""
+    def export(self, names: List[str], dest: Path, unblocked: List[str] = ()) -> List[str]:
+        """Copiază facturile în folderul ales, exact cum au fost importate (XML-ul sau arhiva ZIP din SPV), pentru SAGA.
+
+        `unblocked`: facturile blocate pe care contabilul le-a deblocat explicit, cu motiv scris.
+        """
         dest.mkdir(parents=True, exist_ok=True)
         saved = []
         with self._lock:
             for name in names:
                 item = self._items.get(Path(name).name)
-                # Cele blocate sau necitite nu pleacă niciodată; „VERIFICA” ajunge aici doar după aprobarea din fereastră.
-                if not item or item.get("rezultat", {}).get("decizie") not in ("PLATESTE", "VERIFICA"):
+                # Necititele nu pleacă niciodată, blocatele doar dacă au fost deblocate cu motiv;
+                # „VERIFICA” ajunge aici doar după aprobarea din fereastră.
+                decizie = item.get("rezultat", {}).get("decizie") if item else None
+                if decizie not in ("PLATESTE", "VERIFICA") and not (decizie == "BLOCHEAZA" and name in unblocked):
                     continue
                 src = self.folder / item["fisier"]
                 target = dest / src.name

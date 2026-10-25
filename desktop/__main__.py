@@ -71,14 +71,14 @@ class NativeApi:
                 rezultat.append({"nume": path.name, "eroare": str(e)})
         return rezultat
 
-    def export_invoices(self, fisiere: list) -> dict:
+    def export_invoices(self, fisiere: list, deblocate: list = None) -> dict:
         """Contabilul alege folderul; fiecare factură verificată se salvează exact cum a fost importată, gata de SAGA."""
         folder = self._dialog(webview.FileDialog.FOLDER)
         if not folder:
             return {"anulat": True}
         from backend import main as server
         dest = Path(folder[0])
-        salvate = server.INBOX.export(fisiere, dest)
+        salvate = server.INBOX.export(fisiere, dest, deblocate or [])
         if salvate:
             open_path(dest)
         return {"folder": str(dest), "salvate": len(salvate)}
