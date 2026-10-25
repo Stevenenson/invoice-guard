@@ -31,6 +31,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FACTURI = {f"{f['cui']}|{f['nr']}": f for f in db.FACTURI}
 # Aplicația desktop setează INVOICEGUARD_INBOX = folderul în care contabilul pune facturile din SPV.
 INBOX: Optional[Inbox] = None
+# Se schimbă la fiecare pornire: fereastra desktop își resetează atunci aprobările.
+SESIUNE = datetime.now().isoformat(timespec="seconds")
 
 
 @asynccontextmanager
@@ -159,7 +161,7 @@ def _inbox() -> Inbox:
 def inbox_list():
     if INBOX is None:
         return {"activ": False, "folder": None, "facturi": []}
-    return {"activ": True, "folder": str(INBOX.folder), "facturi": INBOX.items()}
+    return {"activ": True, "folder": str(INBOX.folder), "sesiune": SESIUNE, "facturi": INBOX.items()}
 
 
 @app.post("/api/inbox/upload", summary="Adaugă o factură în folderul urmărit (trage-și-lasă)")
@@ -172,6 +174,18 @@ async def inbox_upload(file: UploadFile = File(...)):
         raise HTTPException(422, "Trageți un XML e-Factura sau arhiva ZIP descărcată din SPV.")
     name = box.save(file.filename or "factura.xml", content)
     return box.get(name)
+
+
+@app.delete("/api/inbox/{fisier}", summary="Scoate o factură din listă (fișierul se mută în folderul Sterse)")
+def inbox_delete(fisier: str):
+    if not _inbox().remove(fisier):
+        raise HTTPException(404, "Factura nu mai e în listă.")
+    return {"sterse": 1}
+
+
+@app.delete("/api/inbox", summary="Scoate toate facturile din listă (fișierele se mută în folderul Sterse)")
+def inbox_clear():
+    return {"sterse": _inbox().clear()}
 
 
 @app.post("/api/inbox/export", summary="Salvează fișierul de plăți pentru facturile aprobate")

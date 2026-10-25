@@ -1,4 +1,4 @@
-"""Datele firmei care folosește InvoiceGuard: contracte, plăți, documente, SPV.
+"""Datele firmei care folosește InvoiceGuard: contracte, plăți, SPV.
 
 Furnizorii au CUI-uri REALE (verificate live la ANAF). Contractele, IBAN-urile și istoricul
 plăților sunt date de test: în produs le încarcă firma (contracte PDF, extrase bancare).
@@ -22,29 +22,29 @@ COTA_TVA = 21.0
 CONTRACTE = {
     "5888716": {"denumire": "DIGI ROMANIA S.A.", "nr": "C-14/2024", "data": "2024-01-10",
                 "iban": iban("RO", "BTRL", "RONCRT0058887160"), "telefon": "031 400 4440", "persoana": "Departament firme",
-                "recurent": True, "livrare_necesara": False,
+                "recurent": True,
                 "articole": {"INT-500": {"denumire": "Abonament internet 500 Mbps", "um": "lună", "pret": 372}}},
     "9010105": {"denumire": "ORANGE ROMANIA SA", "nr": "C-03/2025", "data": "2025-02-01",
                 "iban": iban("RO", "INGB", "0000999990101050"), "telefon": "0744 300 300", "persoana": "Account manager business",
-                "recurent": True, "livrare_necesara": False,
+                "recurent": True,
                 "articole": {"ABO-BIZ": {"denumire": "Abonament mobil business", "um": "linie", "pret": 40}}},
     "14399840": {"denumire": "DANTE INTERNATIONAL SA", "nr": "C-21/2023", "data": "2023-06-15",
                  "iban": iban("RO", "BRDE", "445SV14399840001"), "telefon": "021 200 5200", "persoana": "Vânzări B2B",
-                 "recurent": False, "livrare_necesara": True,
+                 "recurent": False,
                  "articole": {"MON-27": {"denumire": 'Monitor 27"', "um": "buc", "pret": 780},
                               "LAP-15": {"denumire": 'Laptop 15"', "um": "buc", "pret": 3100}}},
     "2816464": {"denumire": "DEDEMAN SRL", "nr": "C-08/2022", "data": "2022-03-01",
                 "iban": iban("RO", "RNCB", "0090000028164640"), "telefon": "0234 513 330", "persoana": "Vânzări firme",
-                "recurent": False, "livrare_necesara": True,
+                "recurent": False,
                 "articole": {"VOP-15L": {"denumire": "Vopsea lavabilă albă 15 L", "um": "buc", "pret": 95},
                              "BORM-18V": {"denumire": "Mașină de înșurubat 18V", "um": "buc", "pret": 310}}},
     "28909028": {"denumire": "ELECTRICA FURNIZARE SA", "nr": "C-01/2024", "data": "2024-01-01",
                  "iban": iban("RO", "BACX", "0000004428909028"), "telefon": "0800 500 000", "persoana": "Relații clienți",
-                 "recurent": True, "livrare_necesara": False,
+                 "recurent": True,
                  "articole": {"EN-KWH": {"denumire": "Energie electrică", "um": "kWh", "pret": 0.92}}},
     "1590082": {"denumire": "OMV PETROM SA", "nr": "C-11/2025", "data": "2025-05-20",
                 "iban": iban("RO", "CECE", "B0003RON01590082"), "telefon": "021 406 4000", "persoana": "Carduri flotă",
-                "recurent": False, "livrare_necesara": True,
+                "recurent": False,
                 "articole": {"MOTORINA": {"denumire": "Motorină (card flotă)", "um": "l", "pret": 6.00}}},
 }
 
@@ -71,16 +71,6 @@ SPV |= {
     "5888716|DG-90102", "28909028|EF-2026-11-802", "2864518|ALX-2026-60010", "14399840|DI-10302", "2816464|DED-1241",
 }
 
-DOCUMENTE = {
-    "14399840|DI-10301": [{"tip": "Aviz de însoțire", "nr": "AV-5601"}],
-    "2816464|DED-1240": [{"tip": "Aviz de însoțire", "nr": "AV-930"}],
-    "2816464|DED-1170": [{"tip": "Aviz de însoțire", "nr": "AV-850"}],
-    "2816464|DED-1241": [{"tip": "Aviz de însoțire", "nr": "AV-931"}],
-    "14399840|DI-10233": [{"tip": "Aviz de însoțire", "nr": "AV-5512"}],
-    "2816464|DED-1203": [{"tip": "Aviz de însoțire", "nr": "AV-901"}],
-    "2816464|DED-1187": [{"tip": "Aviz de însoțire", "nr": "AV-874"}],
-    "1590082|PTR-5521": [{"tip": "Raport tranzacții card", "nr": "RT-10-2026"}],
-}
 
 # Istoric plăți aprilie–septembrie 2026: (cui, prefix, start, pas, zero-padding, sume fără TVA)
 _ISTORIC = [

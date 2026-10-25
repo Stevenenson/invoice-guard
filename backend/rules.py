@@ -220,18 +220,7 @@ def verify_invoice(inv: dict, anaf: Lookup, db) -> dict:
     else:
         checks.append(_check("suma", t, "na", "Istoric insuficient."))
 
-    # 8. Dovadă de livrare
-    t = "Dovadă de livrare"
-    docs = db.DOCUMENTE.get(key, [])
-    if contract and not contract["livrare_necesara"]:
-        checks.append(_check("livrare", t, "na", "Serviciu recurent, nu necesită aviz/PV."))
-    elif docs:
-        checks.append(_check("livrare", t, "ok", ", ".join(f"{d['tip']} {d['nr']}" for d in docs) + ".", sursa="documente"))
-    else:
-        checks.append(_check("livrare", t, "galben", "Nu există aviz, PV de recepție sau CMR încărcat pentru această factură.",
-                             "Fără aviz/PV", "documente"))
-
-    # 9. Nume asemănător cu un furnizor cunoscut, dar alt CUI (frauda „Quanta”)
+    # 8. Nume asemănător cu un furnizor cunoscut, dar alt CUI (frauda „Quanta”)
     sosie = next((
         {"cui": cui, "nume": c["denumire"]} for cui, c in db.CONTRACTE.items()
         if cui != inv["cui"] and similar_names(c["denumire"], inv["furnizor"])
@@ -283,8 +272,6 @@ def _recommend(checks: List[dict], contract: Optional[dict], db) -> str:
         return "Comparați consumul cu luna anterioară. Dacă e corect, aprobați manual."
     if by["contract"]["status"] == "galben":
         return "Furnizor nou: încărcați contractul sau comanda și aprobați manual."
-    if by["livrare"]["status"] == "galben":
-        return "Cereți colegilor PV-ul de recepție înainte de plată."
     if by["anaf"]["status"] == "galben":
         return "Reîncercați verificarea ANAF înainte de plată."
     return "Totul e în regulă. Factura poate fi inclusă în fișierul de plăți."

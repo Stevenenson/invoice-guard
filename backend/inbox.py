@@ -6,8 +6,10 @@ Acceptă XML-ul facturii sau arhiva ZIP descărcată din SPV (XML + semnătura A
 """
 from __future__ import annotations
 
+import filecmp
 import io
 import re
+import shutil
 import threading
 import time
 import zipfile
@@ -41,6 +43,26 @@ def safe_name(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", name)[:120] or "factura.xml"
 
 
+def move_to_trash(path: Path) -> None:
+    """Mută factura în folderul „Sterse” de lângă folderul cu facturi, ca să poată fi recuperată."""
+    trash = path.parent.parent / "Sterse"
+    trash.mkdir(parents=True, exist_ok=True)
+    target = trash / path.name
+    if target.exists():
+        target = trash / f"{path.stem}-{int(time.time())}{path.suffix}"
+    path.replace(target)
+
+
+def empty_folder(folder: Path) -> int:
+    """Golește folderul de facturi (aplicația desktop pornește mereu cu lista goală)."""
+    if not folder.is_dir():
+        return 0
+    paths = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in (".xml", ".zip") and not p.name.startswith(".")]
+    for p in paths:
+        move_to_trash(p)
+    return len(paths)
+
+
 class Inbox:
     def __init__(self, folder: Path, verify: Callable[[dict], dict], on_new: Callable[[dict], None]) -> None:
         self.folder = folder
@@ -65,9 +87,13 @@ class Inbox:
 
     def scan(self, notify: bool = True) -> None:
         with self._lock:
-            for path in sorted(self.folder.iterdir()):
-                if path.suffix.lower() not in (".xml", ".zip") or path.name.startswith("."):
-                    continue
+            paths = [p for p in sorted(self.folder.iterdir()) if p.suffix.lower() in (".xml", ".zip") and not p.name.startswith(".")]
+            # O factură ștearsă din folder (și din Finder/Explorer) dispare și din listă.
+            present = {p.name for p in paths}
+            for name in [n for n in self._items if n not in present]:
+                self._items.pop(name, None)
+                self._seen.pop(name, None)
+            for path in paths:
                 mtime = path.stat().st_mtime
                 if self._seen.get(path.name) == mtime:
                     continue
@@ -97,6 +123,41 @@ class Inbox:
         target.write_bytes(content)
         self.scan()
         return target.name
+
+    def remove(self, name: str) -> bool:
+        """Scoate factura din listă. Fișierul se mută în folderul „Sterse”, ca să poată fi recuperat."""
+        name = Path(name).name
+        with self._lock:
+            path = self.folder / name
+            if path.is_file():
+                move_to_trash(path)
+            found = self._items.pop(name, None) is not None
+            self._seen.pop(name, None)
+            return found
+
+    def export(self, names: List[str], dest: Path) -> List[str]:
+        """Copiază facturile în folderul ales, exact cum au fost importate (XML-ul sau arhiva ZIP din SPV), pentru SAGA."""
+        dest.mkdir(parents=True, exist_ok=True)
+        saved = []
+        with self._lock:
+            for name in names:
+                item = self._items.get(Path(name).name)
+                # Cele blocate sau necitite nu pleacă niciodată; „VERIFICA” ajunge aici doar după aprobarea din fereastră.
+                if not item or item.get("rezultat", {}).get("decizie") not in ("PLATESTE", "VERIFICA"):
+                    continue
+                src = self.folder / item["fisier"]
+                target = dest / src.name
+                # Exportată deja, identic: n-o copiem a doua oară, ca SAGA să nu vadă dubluri.
+                if target.exists() and not filecmp.cmp(src, target, shallow=False):
+                    target = dest / f"{src.stem}-{int(time.time())}{src.suffix}"
+                if not target.exists():
+                    shutil.copy2(src, target)
+                saved.append(target.name)
+        return saved
+
+    def clear(self) -> int:
+        names = [i["fisier"] for i in self.items()]
+        return sum(self.remove(n) for n in names)
 
     def items(self) -> List[dict]:
         with self._lock:

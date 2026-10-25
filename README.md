@@ -31,10 +31,15 @@ Pentru softurile desktop (SAGA, WinMentor), unde nu putem adăuga o coloană, In
 macOS: dublu-click pe `InvoiceGuard Desktop.command` (sau `./run-desktop.sh` în Terminal).
 Pe Windows: dublu-click pe `run-desktop.bat`. Folderul urmărit e `C:\Users\<nume>\InvoiceGuard\Facturi`.
 
-- Urmărește folderul `~/InvoiceGuard/Facturi`: contabilul salvează acolo facturile descărcate din SPV (XML sau arhiva ZIP), iar fiecare factură nouă e verificată în ~2 secunde.
+- Fiecare pornire începe cu lista goală: facturile rămase de data trecută se mută în `~/InvoiceGuard/Sterse`, iar aprobările se resetează.
+- Cât lista e goală, fereastra arată doar locul de import: contabilul trage facturile din SPV (XML sau arhiva ZIP) în mijlocul ferestrei sau apasă „Alege fișierele”. Se poate trage oricând, oriunde în fereastră.
+- Urmărește și folderul `~/InvoiceGuard/Facturi`: ce se salvează acolo e verificat în ~2 secunde.
+- După import apar filtrele (**Blocate**, **De reverificat**, **Verificate**, plus **Necitite** dacă un fișier nu e factură), căutarea și exportul. Facturile cu probleme sunt primele.
+- Detaliile apar direct în fereastră, fără pop-up: în dreapta listei (fereastră lată) sau sub factură (fereastră îngustă, lângă SAGA). Ordinea: verdictul, ce nu se potrivește, ce faci acum.
+- O factură de reverificat se aprobă cu „Am verificat, aprob plata”; trece la „Verificate” și se deschide următoarea.
 - Facturile roșii declanșează o notificare de sistem (macOS: Centrul de notificări, Windows: balon în bara de sistem).
-- O factură primită pe e-mail se trage în fereastră.
-- „Exportă plăți aprobate” salvează CSV-ul în `~/InvoiceGuard/Plati`.
+- „Exportă facturile verificate” întreabă unde să salveze și copiază acolo fiecare factură verificată exact cum a fost importată (același XML sau aceeași arhivă ZIP din SPV), gata de importat în SAGA. Blocatele și cele neaprobate nu se exportă.
+- „Plăți pentru bancă (CSV)” salvează fișierul de plăți în `~/InvoiceGuard/Plati`, cu IBAN-ul din contract.
 - Folderul se poate schimba cu variabila `INVOICEGUARD_INBOX`; serverul aplicației folosește portul 8765.
 
 Limita: fereastra nu vede ce e selectat în SAGA. Lucrează pe facturile din folder, adică exact cele care urmează să intre în SAGA.
@@ -64,6 +69,8 @@ Cererile către API trec prin `background.js`: o pagină `https` ca SAGA WEB nu 
 | `GET /api/anaf/{cui}` | Datele live de la ANAF pentru un CUI |
 | `GET /api/inbox` | Facturile din folderul urmărit, verificate (doar în aplicația desktop) |
 | `POST /api/inbox/upload` | Adaugă o factură în folderul urmărit (trage-și-lasă) |
+| `DELETE /api/inbox/{fisier}` | Scoate o factură din listă (fișierul se mută în `~/InvoiceGuard/Sterse`) |
+| `DELETE /api/inbox` | Scoate toate facturile din listă (la fel, în `Sterse`) |
 | `POST /api/inbox/export` | Salvează fișierul de plăți pentru facturile aprobate |
 
 ## Ce verifică
@@ -77,8 +84,7 @@ Cererile către API trec prin `background.js`: o pagină `https` ca SAGA WEB nu 
 | 6 | Prețuri conform contractului (diferența în lei) | contract | 🟡 |
 | 7 | Nu e dublură (număr deja plătit / aceeași sumă recent) | istoric plăți | 🔴 / 🟡 |
 | 8 | Sumă obișnuită față de media ultimelor 6 facturi | istoric plăți | 🟡 |
-| 9 | Dovadă de livrare (aviz, PV, CMR) | documente | 🟡 |
-| 10 | Numele nu imită un furnizor cunoscut cu alt CUI (aproape identic sau îl conține: „Dedeman Distributie”) | contracte | 🔴 |
+| 9 | Numele nu imită un furnizor cunoscut cu alt CUI (aproape identic sau îl conține: „Dedeman Distributie”) | contracte | 🔴 |
 
 Orice 🔴 înseamnă **Blochează**, orice 🟡 înseamnă **Verifică**, altfel **Plătește**.
 
@@ -98,7 +104,7 @@ Excepție: firmele escrocilor sunt fictive, ca să nu prezentăm o firmă reală
 | DED-1187 Dedeman | Dublură, deja plătită pe 28.09 |
 | ORN-7781203 Orange | +151,25 lei peste prețul din contract |
 | EF-2026-10-778 Electrica | Sumă de 3× media |
-| ALX-2026-55871 Altex | Furnizor nou, fără contract și fără PV |
+| ALX-2026-55871 Altex | Furnizor nou, fără contract |
 | DG-88213, DED-1203, DI-10233 | În regulă: Plătește |
 
 Live, în fața juriului:
@@ -115,7 +121,7 @@ Live, în fața juriului:
 - `backend/efactura.py`: citirea XML-ului e-Factura
 - `backend/inbox.py`, `backend/notify.py`: urmărirea folderului și notificările (aplicația desktop)
 - `desktop/`: aplicația desktop (fereastra pywebview + pagina ei)
-- `backend/seed.py`: date de test (contracte, plăți, SPV, documente, facturi)
+- `backend/seed.py`: date de test (contracte, plăți, SPV, facturi)
 - `samples/`: facturi XML de test (`python -m backend.make_samples` le regenerează)
 
 ## Ce e simulat

@@ -10,31 +10,54 @@
 <body>
   <header class="igd-head">
     <div class="igd-title"><span class="ig-logo">◆</span> InvoiceGuard</div>
-    <button class="igd-icon" id="igd-pin" title="Mereu deasupra" hidden>📌</button>
+    <div class="igd-head-actions">
+      <button class="igd-head-btn" id="igd-add" hidden>＋ Adaugă facturi</button>
+      <button class="igd-head-btn igd-head-quiet" id="igd-clear" title="Golește lista ca să încarci alte facturi" hidden>Șterge toate</button>
+      <button class="igd-icon" id="igd-pin" title="Ține fereastra mereu deasupra (lângă SAGA)" hidden>📌</button>
+    </div>
   </header>
 
-  <div class="igd-folder">
-    <span>Folder urmărit</span>
-    <code id="igd-folder">…</code>
-    <button class="igd-link" id="igd-open-folder" hidden>Deschide</button>
-  </div>
+  <div class="igd-notice" id="igd-notice" hidden></div>
 
-  <div class="igd-stats" id="igd-stats"></div>
-
-  <main class="igd-list" id="igd-list">
-    <p class="igd-empty">Se încarcă…</p>
+  <!-- Pasul 1: până la prima factură, fereastra e doar locul de import. -->
+  <main class="igd-start" id="igd-start">
+    <div class="igd-drop" id="igd-drop" role="button" tabindex="0">
+      <div class="igd-drop-icon">⇩</div>
+      <b>Trage aici facturile descărcate din SPV</b>
+      <span>XML e-Factura sau arhiva ZIP, oricâte odată</span>
+      <span class="ig-btn ig-btn-primary">Alege fișierele</span>
+    </div>
+    <ol class="igd-steps">
+      <li><b>Descarci</b> facturile din SPV, ca de obicei.</li>
+      <li><b>Le tragi aici.</b> Fiecare e verificată în câteva secunde.</li>
+      <li><b>Exporți facturile verificate</b> unde vrei, gata de importat în SAGA.</li>
+    </ol>
+    <p class="igd-folder">
+      Sau salvează-le direct în folderul <code id="igd-folder">…</code>
+      <button class="igd-link" id="igd-open-folder" hidden>Deschide folderul</button>
+    </p>
   </main>
 
-  <div class="igd-drop" id="igd-drop">
-    <b>Trage aici o factură</b>
-    <span>XML e-Factura sau arhiva ZIP din SPV</span>
-    <button class="igd-link" id="igd-pick">sau alege fișierul</button>
-    <input type="file" id="igd-file" accept=".xml,.zip" multiple hidden>
-  </div>
+  <!-- Pasul 2: după import apar filtrele, lista cu detaliile și exportul. -->
+  <section class="igd-work" id="igd-work" hidden>
+    <div class="igd-summary" id="igd-summary"></div>
+    <nav class="igd-tabs" id="igd-tabs" role="tablist" aria-label="Filtru facturi"></nav>
+    <div class="igd-split">
+      <div class="igd-col">
+        <input class="igd-search" id="igd-search" type="search" placeholder="Caută furnizor, număr factură sau CUI" autocomplete="off">
+        <div class="igd-list" id="igd-list"></div>
+      </div>
+      <div class="igd-detail" id="igd-detail"></div>
+    </div>
+    <footer class="igd-foot">
+      <div class="igd-foot-info" id="igd-foot-info"></div>
+      <button class="ig-btn" id="igd-csv" title="Fișierul de plăți (CSV) pentru banca online, cu IBAN-ul din contract">Plăți pentru bancă (CSV)</button>
+      <button class="ig-btn ig-btn-primary" id="igd-export">Exportă facturile verificate</button>
+    </footer>
+  </section>
 
-  <footer class="igd-foot">
-    <button class="ig-btn ig-btn-primary" id="igd-export">Exportă plăți aprobate</button>
-  </footer>
+  <div class="igd-overlay"><div><b>Lasă fișierele aici</b><span>le verificăm imediat</span></div></div>
+  <input type="file" id="igd-file" accept=".xml,.zip" multiple hidden>
 
   <script src="desktop.js"></script>
 </body>
