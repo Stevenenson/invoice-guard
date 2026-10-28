@@ -16,7 +16,8 @@ TARI = {"LV": "Letonia", "LT": "Lituania", "EE": "Estonia", "BG": "Bulgaria", "H
         "GB": "Marea Britanie", "DE": "Germania", "PL": "Polonia", "NL": "Olanda"}
 BANCI = {"BTRL": "Banca Transilvania", "INGB": "ING Bank", "BRDE": "BRD", "RNCB": "BCR", "BACX": "UniCredit",
          "CECE": "CEC Bank", "RZBR": "Raiffeisen", "TREZ": "Trezorerie"}
-STOP = {"srl", "sa", "s", "r", "l", "a", "pfa", "ii", "snc", "sca"}
+# Formele juridice nu contează la compararea numelor („S.C. DIGI ROMANIA S.A.” = „DIGI ROMANIA S.A.”).
+STOP = {"sc", "s", "c", "srl", "sa", "r", "l", "a", "pfa", "ii", "snc", "sca"}
 
 
 def lei(n: float) -> str:
@@ -43,7 +44,10 @@ def norm_name(s: str) -> str:
 def similar_names(known: str, other: str) -> bool:
     """Aproape identice („Computer” vs „Computers”) sau numele cunoscut e cuprins în cel nou („Dedeman” în „Dedeman Distributie”)."""
     a, b = norm_name(known), norm_name(other)
-    if levenshtein(a, b) <= 2:
+    # Cât de diferite pot fi: la nume scurte, o literă schimbată face deja altă firmă („ABC” ≠ „ABD”).
+    shortest = min(len(a), len(b))
+    allowed = 0 if shortest < 5 else 1 if shortest < 10 else 2
+    if levenshtein(a, b) <= allowed:
         return True
     return set(name_tokens(known)) <= set(name_tokens(other))
 
@@ -225,17 +229,31 @@ def verify_invoice(inv: dict, anaf: Lookup, db) -> dict:
         {"cui": cui, "nume": c["denumire"]} for cui, c in db.CONTRACTE.items()
         if cui != inv["cui"] and similar_names(c["denumire"], inv["furnizor"])
     ), None)
-    if sosie:
+    # O firmă veche și activă la ANAF poate fi una din același grup („Orange Romania Communications”):
+    # o verificăm (galben). Firmă nouă, inexistentă sau inactivă cu nume de furnizor cunoscut: fraudă (roșu).
+    veche_activa = (anaf_status in ("ok", "simulat") and info and not info["inactiv"] and not info["radiat"]
+                    and info.get("data_inregistrare") and days_between(info["data_inregistrare"], date.today()) >= 180)
+    if sosie and veche_activa:
+        checks.append(_check("sosie", "Nu imită un furnizor cunoscut", "galben",
+                             f"„{inv['furnizor']}” (CUI {inv['cui']}) seamănă cu furnizorul vostru „{sosie['nume']}” "
+                             f"(CUI {sosie['cui']}), dar are alt CUI. Firma există la ANAF din "
+                             f"{data_ro(info['data_inregistrare'])}: poate fi o firmă din același grup.",
+                             "Nume asemănător", "contracte + ANAF", sosie=sosie))
+    elif sosie:
         checks.append(_check("sosie", "Nu imită un furnizor cunoscut", "rosu",
                              f"„{inv['furnizor']}” (CUI {inv['cui']}) seamănă cu furnizorul vostru „{sosie['nume']}” "
-                             f"(CUI {sosie['cui']}), dar CUI-ul e diferit.", "Nume clonat", "contracte", sosie=sosie))
+                             f"(CUI {sosie['cui']}), dar CUI-ul e diferit, iar firma e nouă sau nu e activă.",
+                             "Nume clonat", "contracte + ANAF", sosie=sosie))
     else:
         checks.append(_check("sosie", "Nu imită un furnizor cunoscut", "ok", "Niciun furnizor cu nume asemănător.", sursa="contracte"))
 
     rosii = [c for c in checks if c["status"] == "rosu"]
     galbene = [c for c in checks if c["status"] == "galben"]
     decizie = "BLOCHEAZA" if rosii else "VERIFICA" if galbene else "PLATESTE"
-    scor = min(100, len(rosii) * 35 + len(galbene) * 12 + (3 if decizie == "PLATESTE" else 0))
+    # Scorul numără problemele găsite: 35 pe roșu, 12 pe galben; o factură verde are 0.
+    # O factură blocată are cel puțin 50, una de reverificat cel mult 49, ca scorul să nu contrazică decizia.
+    scor = min(100, len(rosii) * 35 + len(galbene) * 12)
+    scor = max(scor, 50) if rosii else min(scor, 49)
 
     return {
         "key": key, "factura": inv["nr"], "furnizor": inv["furnizor"], "cui": inv["cui"], "total": total,
@@ -265,6 +283,10 @@ def _recommend(checks: List[dict], contract: Optional[dict], db) -> str:
         return "Nu plătiți până nu clarificați situația fiscală a furnizorului."
     if by["spv"]["status"] == "rosu":
         return "Cereți furnizorului să transmită factura prin e-Factura. Nu plătiți facturi care nu sunt în SPV."
+    if by["sosie"]["status"] == "galben":
+        s = by["sosie"]["sosie"]
+        return (f"Sunați la {s['nume']} la numărul din contract ({db.CONTRACTE[s['cui']]['telefon']}) și întrebați dacă "
+                "această firmă face parte din grupul lor. Aprobați doar după confirmare.")
     if by["pret"]["status"] == "galben" and by["pret"].get("diferenta"):
         return (f"Cereți o factură de stornare pentru diferența de {lei(by['pret']['diferenta'])} sau aprobați manual "
                 "dacă există un act adițional.")
