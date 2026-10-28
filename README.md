@@ -1,11 +1,5 @@
 <p align="center">
-  <h1 align="center">🛡️ InvoiceGuard Desktop</h1>
-  <p align="center">
-    <strong>Verifică facturile primite din SPV înainte să le plătești sau să le imporți în SAGA</strong>
-  </p>
-  <p align="center">
-    <em>Construit la ITFest 2026 · Provocarea 4</em>
-  </p>
+  <img src="docs/banner.svg" alt="InvoiceGuard: verifică facturile din SPV înainte să le plătești" width="100%" />
 </p>
 
 <p align="center">
@@ -14,6 +8,16 @@
   <img src="https://img.shields.io/badge/pywebview-desktop-6C4CF1?style=for-the-badge" />
   <img src="https://img.shields.io/badge/ANAF-verificare_live-1D4F91?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Windows_%7C_macOS-0078D6?style=for-the-badge&logo=windows&logoColor=white" />
+  <img src="https://img.shields.io/badge/ITFest_2026-Provocarea_4-2B1F6B?style=for-the-badge" />
+</p>
+
+<p align="center">
+  <a href="#-ce-face"><b>Ce face</b></a> ·
+  <a href="#-cum-arată"><b>Cum arată</b></a> ·
+  <a href="#-instalare"><b>Instalare</b></a> ·
+  <a href="#-cum-se-folosește"><b>Cum se folosește</b></a> ·
+  <a href="#-ce-verifică"><b>Ce verifică</b></a> ·
+  <a href="#️-cum-funcționează"><b>Cum funcționează</b></a>
 </p>
 
 ---
@@ -24,22 +28,60 @@ Firmele pierd bani pe facturi false sau greșite: un IBAN „schimbat” de un e
 o factură plătită de două ori. **InvoiceGuard** este o fereastră care stă lângă programul de contabilitate (SAGA, WinMentor)
 și verifică fiecare factură primită **înainte** să fie plătită.
 
+> [!IMPORTANT]
+> **e-Factura garantează că factura e completă. InvoiceGuard verifică dacă e datorată.**
+
 Contabilul trage facturile descărcate din SPV în fereastră, iar în câteva secunde fiecare primește un verdict clar:
 
-| | Verdict | Ce înseamnă |
-|---|---|---|
-| 🔴 | **Blocată** | Are o problemă gravă. Nu se plătește și nu intră în export. |
-| 🟡 | **De reverificat** | Ceva nu se potrivește. Contabilul verifică și aprobă manual. |
-| 🟢 | **Verificată** | Totul se potrivește. Gata de plată și de importat în SAGA. |
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <h3>🔴 Blocată</h3>
+      Are o problemă gravă.<br>Nu se plătește și nu intră în export.
+    </td>
+    <td align="center" width="33%">
+      <h3>🟡 De reverificat</h3>
+      Ceva nu se potrivește.<br>Contabilul verifică și aprobă manual.
+    </td>
+    <td align="center" width="33%">
+      <h3>🟢 Verificată</h3>
+      Totul se potrivește.<br>Gata de plată și de importat în SAGA.
+    </td>
+  </tr>
+</table>
 
-### Pe scurt
+### ✨ Pe scurt
 
-- 🔍 **Verifică firma live la ANAF**: există, e activă, numele corespunde CUI-ului, e plătitoare de TVA
-- 🏦 **Prinde IBAN-ul schimbat**: compară contul de pe factură cu cel din contract și din plățile anterioare
-- 🎭 **Prinde firmele-clonă**: „Dedeman Distributie SRL” cu alt CUI decât furnizorul vostru Dedeman
-- 🔁 **Prinde dublurile** și sumele neobișnuite (de exemplu 3× media lunară)
-- 💬 **Explică fiecare decizie** pe înțelesul contabilului și spune ce are de făcut
-- 📤 **Exportă doar facturile verificate**, exact cum au venit din SPV, gata de importat în SAGA
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <h4>🔍 Firma, live la ANAF</h4>
+      Există, e activă, numele corespunde CUI-ului, e plătitoare de TVA.
+    </td>
+    <td width="33%" valign="top">
+      <h4>🏦 IBAN-ul schimbat</h4>
+      Compară contul de pe factură cu cel din contract și din plățile anterioare.
+    </td>
+    <td width="33%" valign="top">
+      <h4>🎭 Firmele-clonă</h4>
+      „Dedeman Distributie SRL” cu alt CUI decât furnizorul vostru Dedeman.
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <h4>🔁 Dubluri și sume ciudate</h4>
+      Aceeași factură plătită de două ori sau o sumă de 3× media lunară.
+    </td>
+    <td width="33%" valign="top">
+      <h4>💬 Explică fiecare decizie</h4>
+      Pe înțelesul contabilului, cu ce are de făcut: „sunați la numărul din contract”.
+    </td>
+    <td width="33%" valign="top">
+      <h4>📤 Export doar ce e verificat</h4>
+      Facturile, exact cum au venit din SPV, gata de importat în SAGA.
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -171,31 +213,25 @@ una blocată are cel puțin 50, una de reverificat cel mult 49.
 
 ## 🏗️ Cum funcționează
 
-```
-┌──────────────┐   trage / salvează   ┌──────────────────┐     ┌───────────────────┐
-│  SPV (ANAF)  │ ───────────────────▶ │  Folderul        │ ──▶ │  Citire XML       │
-│  XML / ZIP   │                      │  InvoiceGuard    │     │  e-Factura (UBL)  │
-└──────────────┘                      └──────────────────┘     └─────────┬─────────┘
-                                                                         │
-                     ┌───────────────────┬───────────────────┬───────────┴───────┐
-                     ▼                   ▼                   ▼                   ▼
-              ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-              │ ANAF (live) │     │  Contracte  │     │   Istoric   │     │     SPV     │
-              │ firmă, TVA  │     │IBAN, prețuri│     │   plăți     │     │             │
-              └──────┬──────┘     └──────┬──────┘     └──────┬──────┘     └──────┬──────┘
-                     └───────────────────┴─────────┬─────────┴───────────────────┘
-                                                   ▼
-                                          ┌─────────────────┐
-                                          │  8 reguli →     │
-                                          │  decizie + scor │
-                                          └────────┬────────┘
-                                                   ▼
-                     ┌─────────────────────────────────────────────────────┐
-                     │  Fereastra InvoiceGuard: listă, detalii, aprobare   │
-                     └──────────────┬───────────────────────┬──────────────┘
-                                    ▼                       ▼
-                          Facturi verificate          Plăți pentru bancă
-                          → import în SAGA            (CSV, IBAN din contract)
+```mermaid
+flowchart TD
+    SPV["📥 SPV (ANAF)<br/>XML / ZIP"] -->|trage / salvează| INBOX["📁 Folderul InvoiceGuard"]
+    INBOX --> XML["🧾 Citire XML e-Factura<br/>(UBL 2.1 / CIUS-RO)"]
+    XML --> A["🏛️ ANAF live<br/>firmă, TVA"]
+    XML --> C["📄 Contracte<br/>IBAN, prețuri"]
+    XML --> H["💳 Istoric plăți"]
+    XML --> S["✅ SPV"]
+    A & C & H & S --> R{"⚖️ 8 reguli<br/>decizie + scor"}
+    R --> UI["🖥️ Fereastra InvoiceGuard<br/>listă · detalii · aprobare"]
+    UI --> EXP["📤 Facturi verificate<br/>→ import în SAGA"]
+    UI --> PAY["🏦 Plăți pentru bancă<br/>CSV, IBAN din contract"]
+
+    classDef src fill:#EDE9FE,stroke:#6C4CF1,color:#2B1F6B
+    classDef rule fill:#2B1F6B,stroke:#2B1F6B,color:#FFFFFF
+    classDef out fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    class A,C,H,S src
+    class R rule
+    class EXP,PAY out
 ```
 
 Totul rulează **local, pe calculatorul contabilului**. Singura conexiune externă este interogarea ANAF.
@@ -319,5 +355,10 @@ Detaliile, API-ul și modul de lucru în echipă sunt în [`docs/dezvoltare.md`]
 ---
 
 <p align="center">
-  <sub>Construit cu ☕ la ITFest 2026</sub>
+  <img src="https://img.shields.io/badge/construit_la-ITFest_2026-2B1F6B?style=flat-square" />
+  <img src="https://img.shields.io/badge/totul_rulează-local-16A34A?style=flat-square" />
+</p>
+
+<p align="center">
+  <sub>Construit cu ☕ la ITFest 2026 de <a href="https://github.com/Stevenenson">Sandu Stefan</a></sub>
 </p>
